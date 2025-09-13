@@ -1,3 +1,6 @@
+// cpu/cpu.h
+// cpu module header
+
 #ifndef CPU_H
 #define CPU_H
 
