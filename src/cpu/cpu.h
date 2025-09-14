@@ -8,7 +8,7 @@
 
 typedef unsigned long size_t;
 
-int get_cpu_pct(char *buf, size_t bufsiz, pct_fmt_t pct_fmt);
+int get_cpu_pct(char *buf, size_t bufsiz, double interval, pct_fmt_t pct_fmt);
 
 int get_cpu_freq(char *buf, size_t bufsiz);
 

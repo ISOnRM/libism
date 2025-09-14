@@ -6,6 +6,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <errno.h>
+#include <time.h>
 #include "cpu.h"
 
 typedef struct {
@@ -13,6 +14,25 @@ typedef struct {
 } cpu_times_t;
 
 // helpers & other
+
+static int sleep_double(double interval) {
+    if (interval < 0.001)
+        interval = 0.001;
+
+    long long ns = (long long)(interval * 1000000000.0);
+
+    struct timespec req = {
+        .tv_sec  = (time_t)(ns / 1000000000LL),
+        .tv_nsec = (long)(ns % 1000000000LL)
+    };
+
+    while (nanosleep(&req, &req) == -1) {
+        if (errno != EINTR)
+            return -1;
+    }
+
+    return 0;
+}
 
 static int read_cpu_times(cpu_times_t *t) {
     FILE *f = fopen("/proc/stat", "r");
@@ -57,8 +77,6 @@ static int read_cpu_times(cpu_times_t *t) {
     return 0;
 }
 
-
-
 static double usage_from_two(const cpu_times_t *a, const cpu_times_t *b) {
     // I did not write it myself, I took the formula from online
     unsigned long long idle_a = a->idle + a->iowait;
@@ -78,4 +96,33 @@ static double usage_from_two(const cpu_times_t *a, const cpu_times_t *b) {
     if (busy < 0.0) busy = 0.0;
     if (busy > 1.0) busy = 1.0;
     return busy * 100.0;
+}
+
+int get_cpu_pct(char *buf, size_t bufsiz, double interval, pct_fmt_t pct_fmt) {
+    if (!buf || bufsiz == 0 || interval <= 0.0 ) {
+        errno = EINVAL;
+        return -1;
+    }
+
+    cpu_times_t a, b;
+    if (read_cpu_times(&a) != 0) return -1;
+    if (sleep_double(interval) != 0) return -1;
+    if (read_cpu_times(&b) != 0) return -1;
+
+    double pct = usage_from_two(&a, &b);
+
+    int written = 0;
+    if (pct_fmt == PCT_INT) {
+        int ipct = (int)(pct + .5);
+        written = snprintf(buf, bufsiz, "%d", ipct);
+    } else if (pct_fmt == PCT_FLOAT) {
+        written = snprintf(buf, bufsiz, "%.2f", pct);
+    } else return -1;
+
+    if (written < 0 || (size_t)written >= bufsiz) {
+        errno = ENOSPC;
+        return -1;
+    }
+
+    return written;
 }
