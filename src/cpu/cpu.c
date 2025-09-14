@@ -14,8 +14,6 @@ typedef struct {
 
 // helpers & other
 
-//
-
 static int read_cpu_times(cpu_times_t *t) {
     FILE *f = fopen("/proc/stat", "r");
     if (!f)
