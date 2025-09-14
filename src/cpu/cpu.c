@@ -35,18 +35,18 @@ static int sleep_double(double interval) {
 }
 
 static int read_cpu_times(cpu_times_t *t) {
-    FILE *f = fopen("/proc/stat", "r");
-    if (!f)
+    FILE *fp = fopen("/proc/stat", "r");
+    if (!fp)
         return -1;
 
     char line[1024];
 
-    if (!fgets(line, sizeof(line), f)) {
-        fclose(f);
+    if (!fgets(line, sizeof(line), fp)) {
+        fclose(fp);
         return -1;
     }
 
-    fclose(f);
+    fclose(fp);
 
     if (strncmp(line, "cpu", 3) != 0) return -1;
 
