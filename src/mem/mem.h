@@ -1,3 +1,6 @@
+// mem/mem.h
+// mem module
+
 #ifndef MEM_H
 #define MEM_H
 
@@ -10,12 +13,12 @@ typedef enum { TOTAL, FREE, USED } mem_fld_t;
 typedef enum { FREE_PCT, USED_PTC } mem_pct_fld_t;
 
 // Write field of memory type to buffer (human readable)
-int get_mem(
+int get_mem_abs(
     char *buf,
     size_t bufsiz,
     mem_type_t mem_type,
     mem_fld_t mem_fld,
-    to_human_cb *human_cb
+    to_human_cb human_cb
 );
 
 // Write memory type's filed's percent to buffer
@@ -26,5 +29,8 @@ int get_mem_pct(
     mem_pct_fld_t mem_pct_fld,
     pct_fmt_t pct_fmt
 );
+
+// Write amount of processes to buffer
+// int get_mem_proc_amt()ХЪ
 
 #endif
