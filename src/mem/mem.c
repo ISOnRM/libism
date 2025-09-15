@@ -7,6 +7,7 @@
 #include <sys/sysinfo.h>
 #include "mem.h"
 #include "util/ull_to_human.h"
+#include "util/to_pct.h"
 
 // helpers & other
 
@@ -17,7 +18,7 @@ static int get_sysinfo(struct sysinfo *si) {
     return result;
 }
 
-static int set_field_abs(uint64_t *fld, struct sysinfo *si, mem_type_t mem_type, mem_fld_t mem_fld) {
+static int set_field_abs(uint64_t *fld, struct sysinfo *si, mem_type_t mem_type, fld_t mem_fld) {
     switch (mem_type) {
         default: return -1;
         case RAM:
@@ -52,7 +53,7 @@ static int set_field_abs(uint64_t *fld, struct sysinfo *si, mem_type_t mem_type,
     return 0;
 }
 
-static int set_field_pct(double *fld, struct sysinfo *si, mem_type_t mem_type, mem_pct_fld_t mem_pct_fld) {
+static int set_field_pct(double *fld, struct sysinfo *si, mem_type_t mem_type, fld_pct_t mem_pct_fld) {
     switch (mem_type) {
         default: return -1;
         case RAM:
@@ -60,13 +61,13 @@ static int set_field_pct(double *fld, struct sysinfo *si, mem_type_t mem_type, m
                 case FREE_PCT:
                     double total = (double)si->totalram;
                     double free = (double)si->freeram;
-                    *fld = 100.0 * (free / total);
+                    *fld = to_pct(free, total);
                     break;
                 case USED_PTC:
                     double total = (double)si->totalram;
                     double free = (double)si->freeram;
                     double used = total - free;
-                    *fld = 100.0 * (used / total);
+                    *fld = to_pct(used, total);
                     break;
             }
             break;
@@ -75,13 +76,13 @@ static int set_field_pct(double *fld, struct sysinfo *si, mem_type_t mem_type, m
                 case FREE_PCT:
                     double total = (double)si->totalswap;
                     double free = (double)si->freeswap;
-                    *fld = 100.0 * (free / total);
+                    *fld = to_pct(free, total);
                     break;
                 case USED_PTC:
                     double total = (double)si->totalswap;
                     double free = (double)si->freeswap;
                     double used = total - free;
-                    *fld = 100.0 * (used / total);
+                    *fld = to_pct(used, total);
                     break;
             }
             break;
@@ -94,7 +95,7 @@ int get_mem_abs(
     char *buf,
     size_t bufsiz,
     mem_type_t mem_type,
-    mem_fld_t mem_fld,
+    fld_t mem_fld,
     to_human_cb human_cb
 ) {
     if (!buf || bufsiz == 0 || !human_cb) return -1;
@@ -115,7 +116,7 @@ int get_mem_pct(
     char *buf,
     size_t bufsiz,
     mem_type_t mem_type,
-    mem_pct_fld_t mem_pct_fld,
+    fld_pct_t mem_fld_pct,
     pct_fmt_t pct_fmt
 ) {
     if (!buf || bufsiz == 0) return -1;
@@ -124,7 +125,7 @@ int get_mem_pct(
     if (get_sysinfo(&si) != 0) return -1;
 
     double field;
-    if (set_field_pct(&field, &si, mem_type, pct_fmt) != 0) return -1;
+    if (set_field_pct(&field, &si, mem_type, mem_fld_pct) != 0) return -1;
 
     int written;
     if (pct_fmt == PCT_INT) {
