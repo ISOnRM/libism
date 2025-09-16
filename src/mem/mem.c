@@ -120,13 +120,13 @@ int get_mem_pct(
     if (mem_type == RAM) {
         struct raminfo ri;
         read_raminfo(&ri);
-        if (mem_fld_pct == FREE_PCT) field      = to_pct(ri.free, ri.total);
+        if      (mem_fld_pct == FREE_PCT) field = to_pct(ri.free, ri.total);
         else if (mem_fld_pct == USED_PCT) field = to_pct(ri.used, ri.total);
         else return -1;
     } else if (mem_type == SWAP) { 
         struct swapinfo si;
         read_swapinfo(&si);
-        if (mem_fld_pct == FREE_PCT) field      = to_pct(si.free, si.total);
+        if      (mem_fld_pct == FREE_PCT) field = to_pct(si.free, si.total);
         else if (mem_fld_pct == USED_PCT) field = to_pct(si.total - si.free, si.total);
         else return -1;
     } else return -1;

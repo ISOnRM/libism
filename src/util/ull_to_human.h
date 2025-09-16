@@ -6,13 +6,13 @@
 #include <inttypes.h>
 #include <errno.h>
 
-typedef int (*to_human_cb)(char *, size_t, uint64_t);
+typedef int (*to_human_cb)(char *, size_t, uintmax_t);
 
 // IEC not. - Write human readable memory amount (from bytes) to buffer (use as callback)
 static inline int ull_to_human_iec(
     char *buf,
     size_t bufsiz,
-    uint64_t num
+    uintmax_t num
 ) {
     if (!buf || bufsiz == 0) {
         errno = EINVAL;
@@ -37,7 +37,7 @@ static inline int ull_to_human_iec(
 static inline int ull_to_human_si(
     char *buf,
     size_t bufsiz,
-    uint64_t num
+    uintmax_t num
 ) {
     if (!buf || bufsiz == 0) {
         errno = EINVAL;
