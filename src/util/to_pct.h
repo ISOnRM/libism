@@ -1,3 +1,6 @@
+// util/to_pct.h
+// easy percent formula
+
 #ifndef TO_PCT_H
 #define TO_PCT_H
 

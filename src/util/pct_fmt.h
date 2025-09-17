@@ -1,3 +1,6 @@
+// util/pct_fmt.h
+// percent format header
+
 #ifndef UTIL_H
 #define UTIL_H
 
