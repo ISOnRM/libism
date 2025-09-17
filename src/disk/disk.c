@@ -31,8 +31,11 @@ static int get_blk_path(char *buf, size_t bufsiz, const char *uuid) {
     char real[PATH_MAX];
     if (!(realpath(temp, real))) return -1;
 
-    int written = snprintf(buf, bufsiz, "%s", real);
-    return written;
+    size_t need = strlen(real) + 1;
+    if (need > bufsiz) return -1;
+
+    memcpy(buf, real, need);
+    return 0;
 }
 
 static int get_stat(struct stat *st, const char *blk_path) {
@@ -83,15 +86,18 @@ static int get_mnt_pt(char *buf, size_t bufsiz, struct majmin mm) {
 static int get_mntpt_byuuid(char *buf, size_t bufsiz, const char *uuid) {
     if (bufsiz == 0 || !uuid) return -1;
     char path[PATH_MAX];
-    if (get_blk_path(path, PATH_MAX, uuid) != 0) return -1;
+    if (get_blk_path(path, PATH_MAX, uuid) < 0) return -1;
     struct stat st;
-    if (get_stat(&st, path) != 0) return -1;
+    if (get_stat(&st, path) < 0) return -1;
     struct majmin mm;
-    if (get_majmin(&st, &mm) != 0) return -1;
+    if (get_majmin(&st, &mm) < 0) return -1;
     char mnt[PATH_MAX];
-    if (get_mnt_pt(mnt, PATH_MAX, mm) != 0) return -1;
+    if (get_mnt_pt(mnt, PATH_MAX, mm) < 0) return -1;
 
-    if (!memcpy(buf, mnt, bufsiz)) return -1;
+    size_t need = strlen(mnt) + 1;
+    if (need > bufsiz) return -1;
+
+    memcpy(buf, mnt, need);
 
     return 0;
 }
