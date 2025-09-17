@@ -37,8 +37,8 @@ set_target_properties(
 target_include_directories(
 	ism
 	PUBLIC
-    	$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>   # для сборки из исходников
-    	$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>   # для потребителей после install
+    	$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+    	$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 	PRIVATE
     	${PROJECT_SOURCE_DIR}/src
 )
