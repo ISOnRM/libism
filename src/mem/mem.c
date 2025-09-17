@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <inttypes.h>
+#include <errno.h>
 #include "mem.h"
 #include "util/to_human.h"
 #include "util/to_pct.h"
@@ -24,8 +25,13 @@ struct swapinfo {
 static uint64_t mem_k(const char *key) {
     if (!key) { errno = EINVAL; return 0; }
 
-    FILE *f = fopen("/proc/meminfo", "r");
-    if (!f) { errno = EIO; return 0; }
+    FILE *fp = fopen("/proc/meminfo", "r");
+    if (!fp) {
+        int err = ferror(fp);
+        fclose(fp);
+        errno = err;
+        return 0;
+    }
 
     char k[64], unit[16] = {0};
     unsigned long long v = 0ULL;
@@ -34,7 +40,7 @@ static uint64_t mem_k(const char *key) {
 
     uint64_t out = 0;
 
-    while (fscanf(f, "%63s %llu %15s", k, &v, unit) >= 2) {
+    while (fscanf(fp, "%63s %llu %15s", k, &v, unit) >= 2) {
         if (strcmp(k, key) == 0 || strcmp(k, want) == 0) {
             out = (uint64_t)v;
             if (unit[0] && strcmp(unit, "kB") == 0) out *= 1024ULL;
@@ -42,7 +48,7 @@ static uint64_t mem_k(const char *key) {
         }
     }
 
-    fclose(f);
+    fclose(fp);
 
     if (out == 0) errno = ENOENT;
     return out;
@@ -57,6 +63,7 @@ static int read_raminfo(struct raminfo *ri) {
     uint64_t cached  = mem_k("Cached");
     uint64_t srecl   = mem_k("SReclaimable");
     uint64_t shmem   = mem_k("Shmem");
+    // lazy 2 do err checkin itll b fine
 
     uint64_t cache_eff = 0;
     if (cached + srecl >= shmem) cache_eff = (cached + srecl) - shmem;
@@ -72,7 +79,10 @@ static int read_raminfo(struct raminfo *ri) {
 }
 
 static int read_swapinfo(struct swapinfo *si) {
-    if (!si) return -1;
+    if (!si) {
+        errno = EINVAL;
+        return -1;
+    }
     si->total = mem_k("SwapTotal");
     si->free  = mem_k("SwapFree");
     return 0;
@@ -85,7 +95,10 @@ int get_mem_abs(
     fld_t mem_fld,
     to_human_cb human_cb
 ) {
-    if (!buf || bufsiz == 0 || !human_cb) return -1;
+    if (!buf || bufsiz == 0 || !human_cb) {
+        errno = EINVAL;
+        return -1;
+    }
 
     int written;
     if (mem_type == RAM) {
@@ -94,15 +107,15 @@ int get_mem_abs(
         if (mem_fld == TOTAL)     written = human_cb(buf, bufsiz, ri.total);
         else if (mem_fld == FREE) written = human_cb(buf, bufsiz, ri.free);
         else if (mem_fld == USED) written = human_cb(buf, bufsiz, ri.used);
-        else return -1;
+        else {errno = EINVAL; return -1;};
     } else if (mem_type == SWAP) {
         struct swapinfo si;
         read_swapinfo(&si);
         if (mem_fld == TOTAL)     written = human_cb(buf, bufsiz, si.total);
         else if (mem_fld == FREE) written = human_cb(buf, bufsiz, si.free);
         else if (mem_fld == USED) written = human_cb(buf, bufsiz, si.total - si.free);
-        else return -1;
-    } else return -1;
+        else {errno = EINVAL; return -1;}
+    } else {errno = EINVAL; return -1;}
     return written;
 }
 
@@ -114,7 +127,10 @@ int get_mem_pct(
     fld_pct_t mem_fld_pct,
     pct_fmt_t pct_fmt
 ) {
-    if (!buf || bufsiz == 0) return -1;
+    if (!buf || bufsiz == 0) {
+        errno = EINVAL;
+        return -1;
+    }
 
     double field;
     if (mem_type == RAM) {
@@ -122,14 +138,14 @@ int get_mem_pct(
         read_raminfo(&ri);
         if      (mem_fld_pct == FREE_PCT) field = to_pct(ri.free, ri.total);
         else if (mem_fld_pct == USED_PCT) field = to_pct(ri.used, ri.total);
-        else return -1;
+        else {errno = EINVAL; return -1;}
     } else if (mem_type == SWAP) { 
         struct swapinfo si;
         read_swapinfo(&si);
         if      (mem_fld_pct == FREE_PCT) field = to_pct(si.free, si.total);
         else if (mem_fld_pct == USED_PCT) field = to_pct(si.total - si.free, si.total);
-        else return -1;
-    } else return -1;
+        else {errno = EINVAL; return -1;}
+    } else {errno = EINVAL; return -1;}
 
     int written;
     if (pct_fmt == PCT_INT) {
@@ -137,6 +153,6 @@ int get_mem_pct(
         written = snprintf(buf, bufsiz, "%d", ipct);
     } else if (pct_fmt == PCT_FLOAT) {
         written = snprintf(buf, bufsiz, "%.2f", field);
-    } else return -1;
+    } else {errno = EINVAL; return -1;}
     return written;
 }

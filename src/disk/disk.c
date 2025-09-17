@@ -6,6 +6,7 @@
 #include <limits.h>
 #include <string.h>
 #include <inttypes.h>
+#include <errno.h>
 #include <sys/stat.h>
 #include <sys/statvfs.h>
 #include <sys/types.h>
@@ -23,16 +24,26 @@
 struct majmin { unsigned maj, min; };
 
 static int get_blk_path(char *buf, size_t bufsiz, const char *uuid) {
-    if (bufsiz < PATH_MAX) return -1;
+    if (bufsiz < PATH_MAX) {
+        errno = ERANGE;
+        return -1;
+    }
 
     char temp[PATH_MAX];
-    snprintf(temp, PATH_MAX, "/dev/disk/by-uuid/%s", uuid);
+    int n = snprintf(temp, PATH_MAX, "/dev/disk/by-uuid/%s", uuid);
+    if (n >= PATH_MAX) {
+        errno = ENAMETOOLONG;
+        return -1;
+    }
 
     char real[PATH_MAX];
     if (!(realpath(temp, real))) return -1;
 
     size_t need = strlen(real) + 1;
-    if (need > bufsiz) return -1;
+    if (need > bufsiz) {
+        errno = ERANGE;
+        return -1;
+    }
 
     memcpy(buf, real, need);
     return 0;
@@ -44,8 +55,14 @@ static int get_stat(struct stat *st, const char *blk_path) {
 }
 
 static int get_majmin(struct stat *st, struct majmin *mm) {
-    if (!st) return -1;
-    if (!S_ISBLK(st->st_mode)) return -1;
+    if (!st) {
+        errno = EINVAL;
+        return -1;
+    }
+    if (!S_ISBLK(st->st_mode)) {
+        errno = ENOTBLK;
+        return -1;
+    }
     dev_t d = st->st_rdev;
     mm->maj = major(d);
     mm->min = minor(d);
@@ -53,10 +70,18 @@ static int get_majmin(struct stat *st, struct majmin *mm) {
 }
 
 static int get_mnt_pt(char *buf, size_t bufsiz, struct majmin mm) {
-    if (bufsiz == 0) return -1;
+    if (bufsiz == 0) {
+        errno = EINVAL;
+        return -1;
+    }
 
     FILE *fp = fopen("/proc/self/mountinfo", "r");
-    if (!fp) return -1;
+    if (!fp) {
+        int err = ferror(fp);
+        fclose(fp);
+        errno = err;
+        return -1;
+    }
 
     char line[8192];
     char mp[4096];
@@ -69,7 +94,7 @@ static int get_mnt_pt(char *buf, size_t bufsiz, struct majmin mm) {
         /* flds: 1  2   3(maj:min) 4(root) 5(mount_point) */
         if (sscanf(line, "%*s %*s %u:%u %*s %4095s", &mj, &mn, mp) == 3) {
             if (mj == mm.maj && mn == mm.min) {
-                if (strlen(mp) + 1 > bufsiz) { errno = ENOSPC; break; }
+                if (strlen(mp) + 1 > bufsiz) { errno = ERANGE; break; }
                 strcpy(buf, mp);
                 result = 0;
                 break;
@@ -78,13 +103,20 @@ static int get_mnt_pt(char *buf, size_t bufsiz, struct majmin mm) {
     }
 
     fclose(fp);
-    if (result != 0 && errno == 0) errno = ENOENT;
+    if (result != 0 && errno == 0) {
+        result = -1;
+        errno = ENOENT;
+    }
     return result;
 }
 
 // final wrapper
 static int get_mntpt_byuuid(char *buf, size_t bufsiz, const char *uuid) {
-    if (bufsiz == 0 || !uuid) return -1;
+    if (bufsiz == 0 || !uuid) {
+        errno = EINVAL;
+        return -1;
+    }
+
     char path[PATH_MAX];
     if (get_blk_path(path, PATH_MAX, uuid) < 0) return -1;
     struct stat st;
@@ -95,7 +127,10 @@ static int get_mntpt_byuuid(char *buf, size_t bufsiz, const char *uuid) {
     if (get_mnt_pt(mnt, PATH_MAX, mm) < 0) return -1;
 
     size_t need = strlen(mnt) + 1;
-    if (need > bufsiz) return -1;
+    if (need > bufsiz) {
+        errno = ERANGE;
+        return -1;
+    }
 
     memcpy(buf, mnt, need);
 
@@ -119,7 +154,7 @@ static int write_abs(char *buf, size_t bufsiz, char *mntpt, fld_t disk_fld, to_h
         written = human_cb(buf, bufsiz, s_avail);
     } else if (disk_fld == USED) {
         written = human_cb(buf, bufsiz, s_used);
-    } else return -1;
+    } else {errno = EINVAL; return -1;}
 
     return written;
 }
@@ -137,7 +172,7 @@ static int write_pct(char *buf, size_t bufsiz, char *mntpt, fld_pct_t disk_pct_f
     double field;
     if      (disk_pct_fld == FREE_PCT) field = to_pct(s_avail, s_total);
     else if (disk_pct_fld == USED_PCT) field = to_pct(s_used , s_total);
-    else return -1;
+    else {errno = EINVAL; return -1;}
 
     int written;
     if (pct_fmt == PCT_INT) {
@@ -145,13 +180,16 @@ static int write_pct(char *buf, size_t bufsiz, char *mntpt, fld_pct_t disk_pct_f
         written = snprintf(buf, bufsiz, "%d", ipct);
     } else if (pct_fmt == PCT_FLOAT) {
         written = snprintf(buf, bufsiz, "%.2f", field);
-    } else return -1;
+    } else {errno = EINVAL; return -1;}
 
     return written;
 }
 
 int get_disk_abs_byuuid(char *buf, size_t bufsiz, char *uuid, fld_t disk_fld, to_human_cb human_cb) {
-    if (!uuid || bufsiz == 0) return -1;
+    if (!uuid || bufsiz == 0 || !human_cb) {
+        errno = EINVAL;
+        return -1;
+    }
 
     char mntpt[PATH_MAX];
     if (get_mntpt_byuuid(mntpt, PATH_MAX, uuid) != 0) return -1;

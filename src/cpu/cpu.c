@@ -19,7 +19,7 @@ static int sleep_double(double interval) {
     if (interval < 0.001)
         interval = 0.001;
 
-    long long ns = (long long)(interval * 1000000000.0);
+    long long ns = (long long)(interval * 1e9);
 
     struct timespec req = {
         .tv_sec  = (time_t)(ns / 1000000000LL),
@@ -42,13 +42,18 @@ static int read_cpu_times(cpu_times_t *t) {
     char line[1024];
 
     if (!fgets(line, sizeof(line), fp)) {
+        int err = ferror(fp);
         fclose(fp);
+        errno = err;
         return -1;
     }
 
     fclose(fp);
 
-    if (strncmp(line, "cpu", 3) != 0) return -1;
+    if (strncmp(line, "cpu", 3) != 0) {
+        errno = EPROTO;
+        return -1;
+    }
 
     memset(t, 0 ,sizeof(*t));
 
@@ -68,11 +73,17 @@ static int read_cpu_times(cpu_times_t *t) {
         &t->guest_nice
     );
 
-    if (strcmp(tag, "cpu") != 0)
+    if (strcmp(tag, "cpu") != 0) {
+        errno = EPROTO;
         return -1;
+    }
+        
 
-    if (n < 6)
+    if (n < 6){
+        errno = EPROTO;
         return -1;
+    }
+        
 
     return 0;
 }
@@ -117,10 +128,10 @@ int get_cpu_pct(char *buf, size_t bufsiz, double interval, pct_fmt_t pct_fmt) {
         written = snprintf(buf, bufsiz, "%d", ipct);
     } else if (pct_fmt == PCT_FLOAT) {
         written = snprintf(buf, bufsiz, "%.2f", pct);
-    } else return -1;
+    } else {errno = EINVAL; return -1;}
 
     if (written < 0 || (size_t)written >= bufsiz) {
-        errno = ENOSPC;
+        errno = ERANGE;
         return -1;
     }
 
