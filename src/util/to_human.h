@@ -9,7 +9,7 @@
 typedef int (*to_human_cb)(char *, size_t, uintmax_t);
 
 // IEC not. - Write human readable memory amount (from bytes) to buffer (use as callback)
-static inline int ull_to_human_iec(
+static inline int to_human_iec(
     char *buf,
     size_t bufsiz,
     uintmax_t num
@@ -34,7 +34,7 @@ static inline int ull_to_human_iec(
 }
 
 // SI not. - Write human readable memory amount (from bytes) to buffer (use as callback)
-static inline int ull_to_human_si(
+static inline int to_human_si(
     char *buf,
     size_t bufsiz,
     uintmax_t num

@@ -13,7 +13,7 @@
 #include "disk.h"
 #include "util/fld.h"
 #include "util/pct_fmt.h"
-#include "util/ull_to_human.h"
+#include "util/to_human.h"
 #include "util/to_pct.h"
 
 // helpre & others
@@ -81,7 +81,7 @@ static int get_mnt_pt(char *buf, size_t bufsiz, struct majmin mm) {
 
 // final wrapper
 static int get_mntpt_byuuid(char *buf, size_t bufsiz, const char *uuid) {
-    if (bufsiz == 0 | !uuid) return -1;
+    if (bufsiz == 0 || !uuid) return -1;
     char path[PATH_MAX];
     if (get_blk_path(path, PATH_MAX, uuid) != 0) return -1;
     struct stat st;
@@ -96,12 +96,7 @@ static int get_mntpt_byuuid(char *buf, size_t bufsiz, const char *uuid) {
     return 0;
 }
 
-int get_disk_abs_byuuid(char *buf, size_t bufsiz, char *uuid, fld_t disk_fld, to_human_cb human_cb) {
-    if (!uuid || bufsiz == 0) return -1;
-
-    char mntpt[PATH_MAX];
-    if (get_mntpt_byuuid(mntpt, PATH_MAX, uuid) != 0) return -1;
-
+static int write_abs(char *buf, size_t bufsiz, char *mntpt, fld_t disk_fld, to_human_cb human_cb) {
     struct statvfs stvfs;
     if (statvfs(mntpt, &stvfs) != 0) return -1;
 
@@ -123,12 +118,7 @@ int get_disk_abs_byuuid(char *buf, size_t bufsiz, char *uuid, fld_t disk_fld, to
     return written;
 }
 
-int get_disk_pct_byuuid(char *buf, size_t bufsiz, char *uuid, fld_pct_t disk_pct_fld, pct_fmt_t pct_fmt) {
-    if (!uuid || bufsiz == 0) return -1;
-
-    char mntpt[PATH_MAX];
-    if (get_mntpt_byuuid(mntpt, PATH_MAX, uuid) != 0) return -1;
-
+static int write_pct(char *buf, size_t bufsiz, char *mntpt, fld_pct_t disk_pct_fld, pct_fmt_t pct_fmt) {
     struct statvfs stvfs;
     if (statvfs(mntpt, &stvfs) != 0) return -1;
 
@@ -152,4 +142,34 @@ int get_disk_pct_byuuid(char *buf, size_t bufsiz, char *uuid, fld_pct_t disk_pct
     } else return -1;
 
     return written;
+}
+
+int get_disk_abs_byuuid(char *buf, size_t bufsiz, char *uuid, fld_t disk_fld, to_human_cb human_cb) {
+    if (!uuid || bufsiz == 0) return -1;
+
+    char mntpt[PATH_MAX];
+    if (get_mntpt_byuuid(mntpt, PATH_MAX, uuid) != 0) return -1;
+
+    return write_abs(buf, bufsiz, mntpt, disk_fld, human_cb);
+}
+
+int get_disk_pct_byuuid(char *buf, size_t bufsiz, char *uuid, fld_pct_t disk_pct_fld, pct_fmt_t pct_fmt) {
+    if (!uuid || bufsiz == 0) return -1;
+
+    char mntpt[PATH_MAX];
+    if (get_mntpt_byuuid(mntpt, PATH_MAX, uuid) != 0) return -1;
+
+    return write_pct(buf, bufsiz, mntpt, disk_pct_fld, pct_fmt);
+}
+
+int get_disk_abs_bymntpt(char *buf, size_t bufsiz, char *path, fld_t disk_fld, to_human_cb human_cb) {
+    if (!path || bufsiz == 0) return -1;
+
+    return write_abs(buf, bufsiz, path, disk_fld, human_cb);
+}
+
+int get_disk_pct_bymntpt(char *buf, size_t bufsiz, char *path, fld_pct_t disk_pct_fld, pct_fmt_t pct_fmt) {
+    if (!path || bufsiz == 0) return -1;
+
+    return write_pct(buf, bufsiz, path, disk_pct_fld, pct_fmt);
 }
