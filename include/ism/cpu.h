@@ -5,7 +5,7 @@
 #define CPU_H
 
 #include <stddef.h>
-#include "util/pct_fmt.h"
+#include "pct_fmt.h"
 
 int get_cpu_pct(char *buf, size_t bufsiz, double interval, pct_fmt_t pct_fmt);
 

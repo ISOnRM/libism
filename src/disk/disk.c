@@ -11,10 +11,10 @@
 #include <sys/statvfs.h>
 #include <sys/types.h>
 #include <sys/sysmacros.h>
-#include "disk.h"
-#include "util/fld.h"
-#include "util/pct_fmt.h"
-#include "util/to_human.h"
+#include <ism/disk.h>
+#include <ism/fld.h>
+#include <ism/pct_fmt.h>
+#include <ism/to_human.h>
 #include "util/to_pct.h"
 
 // helpre & others

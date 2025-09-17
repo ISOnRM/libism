@@ -5,8 +5,8 @@
 #include <string.h>
 #include <inttypes.h>
 #include <errno.h>
-#include "mem.h"
-#include "util/to_human.h"
+#include <ism/mem.h>
+#include <ism/to_human.h>
 #include "util/to_pct.h"
 
 // helpers & other

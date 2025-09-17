@@ -5,9 +5,9 @@
 #define MEM_H
 
 #include <stddef.h>
-#include "util/to_human.h"
-#include "util/pct_fmt.h"
-#include "util/fld.h"
+#include "to_human.h"
+#include "pct_fmt.h"
+#include "fld.h"
 
 typedef enum { RAM, SWAP } mem_type_t;
 
