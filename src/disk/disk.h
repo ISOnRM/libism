@@ -9,6 +9,11 @@
 #include "util/pct_fmt.h"
 #include "util/fld.h"
 
+/*
+    FREE field here is actually available blocks (blocks available for non-root user),
+    USED is calculated with available blocks
+*/
+
 int get_disk_abs_byuuid(char *buf, size_t bufsiz, char *uuid, fld_t disk_fld, to_human_cb human_cb);
 
 int get_disk_pct_byuuid(char *buf, size_t bufsiz, char *uuid, fld_pct_t disk_pct_fld, pct_fmt_t pct_fmt);
