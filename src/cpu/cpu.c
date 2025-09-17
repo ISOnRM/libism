@@ -37,9 +37,6 @@ static int sleep_double(double interval) {
 static int read_cpu_times(cpu_times_t *t) {
     FILE *fp = fopen("/proc/stat", "r");
     if (!fp) {
-		int err = ferror(fp);
-		fclose(fp);
-		errno = err;
 		return -1;
 	}
 

@@ -77,9 +77,6 @@ static int get_mnt_pt(char *buf, size_t bufsiz, struct majmin mm) {
 
     FILE *fp = fopen("/proc/self/mountinfo", "r");
     if (!fp) {
-        int err = ferror(fp);
-        fclose(fp);
-        errno = err;
         return -1;
     }
 

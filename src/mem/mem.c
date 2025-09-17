@@ -27,9 +27,6 @@ static uint64_t mem_k(const char *key) {
 
     FILE *fp = fopen("/proc/meminfo", "r");
     if (!fp) {
-        int err = ferror(fp);
-        fclose(fp);
-        errno = err;
         return 0;
     }
 
