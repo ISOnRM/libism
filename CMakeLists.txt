@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.31)
 
 project(
-	ism
+	libism
 	VERSION 0.1.0
 	DESCRIPTION "Tiny system monitoring library (CPU/MEM/DISK)"
 	LANGUAGES C
@@ -9,33 +9,33 @@ project(
 
 include(GNUInstallDirs)
 
-option(ISM_BUILD_SHARED "Build shared libism (.so) instead of static (.a)" OFF)
+option(LIBISM_BUILD_SHARED "Build shared libism (.so) instead of static (.a)" OFF)
 
 set(
-	ISM_SOURCES
+	LIBISM_SOURCES
 	src/cpu/cpu.c
 	src/mem/mem.c
 	src/disk/disk.c
 )
 
 if(ISM_BUILD_SHARED)
-  add_library(ism SHARED ${ISM_SOURCES})
+  add_library(libism SHARED ${LIBISM_SOURCES})
 else()
-  add_library(ism STATIC ${ISM_SOURCES})
+  add_library(libism STATIC ${LIBISM_SOURCES})
 endif()
 
-add_library(ism::ism ALIAS ism)
+add_library(libism::libism ALIAS libism)
 
 set_target_properties(
-  ism PROPERTIES 
-  C_STANDARD 17 #idk what standart tbh
+  libism PROPERTIES 
+  C_STANDARD 99 #idk what standart tbh
   C_STANDARD_REQUIRED OFF #thats why OFF
   OUTPUT_NAME "ism"
   VERSION ${PROJECT_VERSION}
 )
 
 target_include_directories(
-	ism
+	libism
 	PUBLIC
     	$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
     	$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
@@ -44,13 +44,13 @@ target_include_directories(
 )
 
 target_compile_options(
-	ism PRIVATE
+	libism PRIVATE
 	-Wall -Wextra -Werror -O2
 )
 
 install(
-	TARGETS ism
-	EXPORT ismTargets
+	TARGETS libism
+	EXPORT libismTargets
 	ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
 	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
 	RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
@@ -60,8 +60,8 @@ install(
 install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
 install(
-	EXPORT ismTargets
-	NAMESPACE ism::
-	DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/ism
+	EXPORT libismTargets
+	NAMESPACE libism::
+	DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/libism
 )
 

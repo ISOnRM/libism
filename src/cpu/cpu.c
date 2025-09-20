@@ -7,7 +7,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <time.h>
-#include <ism/cpu.h>
+#include <libism/cpu.h>
 
 typedef struct {
     unsigned long long user, nice, system, idle, iowait, irq, softirq, steal, guest, guest_nice;
